@@ -113,8 +113,8 @@ class DatasetCatalog(object):
         },
         "VG_stanford_filtered_with_attribute": {
             "img_dir":"/home/suji/spring20/Large-Scale-VRD/datasets/large_scale_VRD/Visual_Genome/images",
-            "roidb_file": "vg/VG-SGG-with-attri.h5",
-            "dict_file": "vg/VG-SGG-dicts-with-attri.json",
+            "roidb_file": "/home/suji/spring20/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-with-attri.h5",
+            "dict_file": "/home/suji/spring20/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-dicts-with-attri.json",
             "image_file": "/home/suji/spring20/KERN/data/stanford_filtered/image_data.json",
         },
         "vcr":{
