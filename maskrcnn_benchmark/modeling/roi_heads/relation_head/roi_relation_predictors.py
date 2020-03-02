@@ -448,8 +448,8 @@ class CausalAnalysisPredictor(nn.Module):
         num_inputs = in_channels
 
         # load class dict
-        statistics = get_dataset_statistics(config)
-        obj_classes, rel_classes = statistics['obj_classes'], statistics['rel_classes']
+        # statistics = get_dataset_statistics(config)
+        # obj_classes, rel_classes = statistics['obj_classes'], statistics['rel_classes']
         assert self.num_obj_cls==len(obj_classes)
         assert self.num_rel_cls==len(rel_classes)
         # init contextual lstm encoding
@@ -492,7 +492,7 @@ class CausalAnalysisPredictor(nn.Module):
         assert self.pooling_dim == config.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
 
         # convey statistics into FrequencyBias to avoid loading again
-        self.freq_bias = FrequencyBias(config, statistics)
+        # self.freq_bias = FrequencyBias(config, statistics)
 
         # add spatial emb for visual feature
         if self.spatial_for_vision:

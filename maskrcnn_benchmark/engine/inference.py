@@ -16,6 +16,7 @@ from .bbox_aug import im_detect_bbox_aug
 
 
 def compute_on_dataset(model, data_loader, device, synchronize_gather=True, timer=None):
+    # change
     model.eval()
     results_dict = {}
     cpu_device = torch.device("cpu")
