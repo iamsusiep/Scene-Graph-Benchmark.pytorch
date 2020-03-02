@@ -16,29 +16,40 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 BOX_SCALE = 1024  # Scale at which we have the boxes
 
 class VCRDataset(torch.utils.data.Dataset):
-    def __init__(self, split, img_dir, roidb_file, dict_file, image_file, transforms=None,
-                filter_empty_rels=True, num_im=-1, num_val_im=5000,
-                filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
+    def __init__(self, split, img_dir, dict_file, transforms=None):
+
+    # def __init__(self, split, img_dir, roidb_file, dict_file, image_file, transforms=None,
+    #             filter_empty_rels=True, num_im=-1, num_val_im=5000,
+    #             filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
         assert split in {'train', 'val', 'test'}
         self.flip_aug = flip_aug
         self.split = split
         self.img_dir = img_dir
         self.dict_file = dict_file
-        self.roidb_file = roidb_file
-        self.image_file = image_file
-        self.filter_non_overlap = False#filter_non_overlap and self.split == 'train'
-        self.filter_duplicate_rels = False#filter_duplicate_rels and self.split == 'train'
-        self.transforms = transforms #None
 
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
 
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.filenames = glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')
+        self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
+        self.img_info = []
+        for index in range(len(self.filenames)):
+            img = Image.open(self.filenames[index]).convert("RGB")
+            self.imgs.append(img)
+            self.img_info.append({"width": img.size[0], "height":img.size[1]})
 
-     def __getitem__(self, index):
-        img = Image.open(self.filenames[index]).convert("RGB")
+    def __getitem__(self, index):
+        # img = Image.open(self.filenames[index]).convert("RGB")
         # w, h = img.size
-        return img, None, index
+        return self.imgs[index], None, index
+
+    def get_img_info(self, index):
+        # WARNING: original image_file.json has several pictures with false image size
+        # use correct function to check the validity before training
+        # it will take a while, you only need to do it once
+
+        # correct_img_info(self.img_dir, self.image_file)
+        return self.img_info[index]
 
     def __len__(self):
         return len(self.filenames)

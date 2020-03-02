@@ -310,22 +310,8 @@ def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0):
     )
     DatasetCatalog = paths_catalog.DatasetCatalog
     dataset_list =cfg.DATASETS.VCR
-    # if mode == 'train':
-    #     dataset_list = cfg.DATASETS.TRAIN
-    # elif mode == 'val':
-    #     dataset_list = cfg.DATASETS.VAL
-    # else:
-    #     dataset_list = cfg.DATASETS.TEST
-
-    # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
-    # transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
     transforms = None
     datasets = build_vcr_dataset(cfg, dataset_list, transforms, DatasetCatalog)
-
-    # if is_train:
-    #     # save category_id to label name mapping
-    #     save_labels(datasets, cfg.OUTPUT_DIR)
-
     data_loaders = []
     for dataset in datasets:
         sampler = make_data_sampler(dataset, shuffle, is_distributed)

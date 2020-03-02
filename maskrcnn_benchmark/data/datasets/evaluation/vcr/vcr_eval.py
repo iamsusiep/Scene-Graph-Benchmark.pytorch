@@ -58,59 +58,59 @@ def do_vcr_evaluation(
     result_str = '\n' + '=' * 100 + '\n'
     if "bbox" in iou_types:
         # create a Coco-like object that we can use to evaluate detection!
-        anns = []
-        for image_id, gt in enumerate(groundtruths):
-            labels = gt.get_field('labels').tolist() # integer
-            boxes = gt.bbox.tolist() # xyxy
-            for cls, box in zip(labels, boxes):
-                anns.append({
-                    'area': (box[3] - box[1] + 1) * (box[2] - box[0] + 1),
-                    'bbox': [box[0], box[1], box[2] - box[0] + 1, box[3] - box[1] + 1], # xywh
-                    'category_id': cls,
-                    'id': len(anns),
-                    'image_id': image_id,
-                    'iscrowd': 0,
-                })
-        fauxcoco = COCO()
-        fauxcoco.dataset = {
-            'info': {'description': 'use coco script for vg detection evaluation'},
-            'images': [{'id': i} for i in range(len(groundtruths))],
-            'categories': [
-                {'supercategory': 'person', 'id': i, 'name': name} 
-                for i, name in enumerate(dataset.ind_to_classes) if name != '__background__'
-                ],
-            'annotations': anns,
-        }
-        fauxcoco.createIndex()
+        # anns = []
+        # for image_id, gt in enumerate(groundtruths):
+        #     labels = gt.get_field('labels').tolist() # integer
+        #     boxes = gt.bbox.tolist() # xyxy
+        #     for cls, box in zip(labels, boxes):
+        #         anns.append({
+        #             'area': (box[3] - box[1] + 1) * (box[2] - box[0] + 1),
+        #             'bbox': [box[0], box[1], box[2] - box[0] + 1, box[3] - box[1] + 1], # xywh
+        #             'category_id': cls,
+        #             'id': len(anns),
+        #             'image_id': image_id,
+        #             'iscrowd': 0,
+        #         })
+        # fauxcoco = COCO()
+        # fauxcoco.dataset = {
+        #     'info': {'description': 'use coco script for vg detection evaluation'},
+        #     'images': [{'id': i} for i in range(len(groundtruths))],
+        #     'categories': [
+        #         {'supercategory': 'person', 'id': i, 'name': name} 
+        #         for i, name in enumerate(dataset.ind_to_classes) if name != '__background__'
+        #         ],
+        #     'annotations': anns,
+        # }
+        # fauxcoco.createIndex()
 
         # format predictions to coco-like
-        cocolike_predictions = []
-        for image_id, prediction in enumerate(predictions):
-            box = prediction.convert('xywh').bbox.detach().cpu().numpy() # xywh
-            score = prediction.get_field('pred_scores').detach().cpu().numpy() # (#objs,)
-            label = prediction.get_field('pred_labels').detach().cpu().numpy() # (#objs,)
-            # for predcls, we set label and score to groundtruth
-            if mode == 'predcls':
-                label = prediction.get_field('labels').detach().cpu().numpy()
-                score = np.ones(label.shape[0])
-                assert len(label) == len(box)
-            image_id = np.asarray([image_id]*len(box))
-            cocolike_predictions.append(
-                np.column_stack((image_id, box, score, label))
-                )
-            # logger.info(cocolike_predictions)
-        cocolike_predictions = np.concatenate(cocolike_predictions, 0)
-        # evaluate via coco API
-        res = fauxcoco.loadRes(cocolike_predictions)
-        coco_eval = COCOeval(fauxcoco, res, 'bbox')
-        coco_eval.params.imgIds = list(range(len(groundtruths)))
-        coco_eval.evaluate()
-        coco_eval.accumulate()
-        coco_eval.summarize()
-        mAp = coco_eval.stats[1]
+        # cocolike_predictions = []
+        # for image_id, prediction in enumerate(predictions):
+        #     box = prediction.convert('xywh').bbox.detach().cpu().numpy() # xywh
+        #     score = prediction.get_field('pred_scores').detach().cpu().numpy() # (#objs,)
+        #     label = prediction.get_field('pred_labels').detach().cpu().numpy() # (#objs,)
+        #     # for predcls, we set label and score to groundtruth
+        #     # if mode == 'predcls':
+        #     #     label = prediction.get_field('labels').detach().cpu().numpy()
+        #     #     score = np.ones(label.shape[0])
+        #     #     assert len(label) == len(box)
+        #     image_id = np.asarray([image_id]*len(box))
+        #     cocolike_predictions.append(
+        #         np.column_stack((image_id, box, score, label))
+        #         )
+        #     # logger.info(cocolike_predictions)
+        # cocolike_predictions = np.concatenate(cocolike_predictions, 0)
+        # # evaluate via coco API
+        # res = fauxcoco.loadRes(cocolike_predictions)
+        # coco_eval = COCOeval(fauxcoco, res, 'bbox')
+        # coco_eval.params.imgIds = list(range(len(groundtruths)))
+        # coco_eval.evaluate()
+        # coco_eval.accumulate()
+        # coco_eval.summarize()
+        # mAp = coco_eval.stats[1]
         
-        result_str += 'Detection evaluation mAp=%.4f\n' % mAp
-        result_str += '=' * 100 + '\n'
+        # result_str += 'Detection evaluation mAp=%.4f\n' % mAp
+        # result_str += '=' * 100 + '\n'
 
     # if "relations" in iou_types:
     #     result_dict = {}
@@ -167,18 +167,17 @@ def do_vcr_evaluation(
     #         result_str += eval_pair_accuracy.generate_print_string(mode)
     #     result_str += '=' * 100 + '\n'
 
-
-    logger.info(result_str)
-    
+    # logger.info(result_str)
+    return -1
     # if "relations" in iou_types:
     #     if output_folder:
     #         torch.save(result_dict, os.path.join(output_folder, 'result_dict.pytorch'))
     #     return float(np.mean(result_dict[mode + '_recall'][100]))
     # elif "bbox" in iou_types:
-    if "bbox" in iou_types:
-        return float(mAp)
-    else:
-        return -1
+    # if "bbox" in iou_types:
+    #     return float(mAp)
+    # else:
+    #     return -1
 
 
 def save_output(output_folder, groundtruths, predictions, dataset):
@@ -190,18 +189,18 @@ def save_output(output_folder, groundtruths, predictions, dataset):
         # visualization information
         visual_info = []
         for image_id, (groundtruth, prediction) in enumerate(zip(groundtruths, predictions)):
-            img_file = os.path.abspath(dataset.filenames[image_id])
-            groundtruth = [
-                [b[0], b[1], b[2], b[3], dataset.categories[l]] # xyxy, str
-                for b, l in zip(groundtruth.bbox.tolist(), groundtruth.get_field('labels').tolist())
-                ]
+            img_file = dataset.filenames[image_id]#os.path.abspath(dataset.filenames[image_id])
+            # groundtruth = [
+            #     [b[0], b[1], b[2], b[3], dataset.categories[l]] # xyxy, str
+            #     for b, l in zip(groundtruth.bbox.tolist(), groundtruth.get_field('labels').tolist())
+            #     ]
             prediction = [
                 [b[0], b[1], b[2], b[3], dataset.categories[l]] # xyxy, str
                 for b, l in zip(prediction.bbox.tolist(), prediction.get_field('pred_labels').tolist())
                 ]
             visual_info.append({
                 'img_file': img_file,
-                'groundtruth': groundtruth,
+                # 'groundtruth': groundtruth,
                 'prediction': prediction
                 })
         with open(os.path.join(output_folder, "visual_info.json"), "w") as f:
