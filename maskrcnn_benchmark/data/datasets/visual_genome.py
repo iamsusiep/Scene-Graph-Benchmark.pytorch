@@ -308,6 +308,7 @@ def load_image_filenames(img_dir, image_file):
     with open(image_file, 'r') as f:
         im_data = json.load(f)
 
+    print("img_dir:{}, image_file:{}".format(img_dir, image_file))
     corrupted_ims = ['1592.jpg', '1722.jpg', '4616.jpg', '4617.jpg']
     fns = []
     img_info = []
