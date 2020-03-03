@@ -16,11 +16,11 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 BOX_SCALE = 1024  # Scale at which we have the boxes
 
 class VCRDataset(torch.utils.data.Dataset):
-    def __init__(self, split, img_dir, dict_file, transforms=None):
+    #def __init__(self, split, img_dir, dict_file, transforms=None):
 
-    # def __init__(self, split, img_dir, roidb_file, dict_file, image_file, transforms=None,
-    #             filter_empty_rels=True, num_im=-1, num_val_im=5000,
-    #             filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
+    def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
+                 filter_empty_rels=True, num_im=-1, num_val_im=5000,
+                 filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
         assert split in {'train', 'val', 'test'}
         self.flip_aug = flip_aug
         self.split = split
