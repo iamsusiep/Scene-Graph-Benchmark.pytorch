@@ -55,6 +55,22 @@ class VCRDataset(torch.utils.data.Dataset):
         return len(self.filenames)
 
 
+    def get_statistics(self):
+        # fg_matrix, bg_matrix = get_VG_statistics(img_dir=self.img_dir, roidb_file=self.roidb_file, dict_file=self.dict_file,
+        #                                         image_file=self.image_file, must_overlap=True)
+        # eps = 1e-3
+        # bg_matrix += 1
+        # fg_matrix[:, :, 0] = bg_matrix
+        # pred_dist = np.log(fg_matrix / fg_matrix.sum(2)[:, :, None] + eps)
+
+        result = {
+            'fg_matrix': None, #torch.from_numpy(fg_matrix),
+            'pred_dist': None,#torch.from_numpy(pred_dist).float(),
+            'obj_classes': self.ind_to_classes,
+            'rel_classes': self.ind_to_predicates,
+            'att_classes': self.ind_to_attributes,
+        }
+        return result
 
 
 class VGDataset(torch.utils.data.Dataset):
