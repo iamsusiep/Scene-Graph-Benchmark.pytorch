@@ -56,7 +56,8 @@ def do_vcr_evaluation(
     save_output(output_folder, groundtruths, predictions, dataset)
     
     result_str = '\n' + '=' * 100 + '\n'
-    if "bbox" in iou_types:
+    return -1
+    #if "bbox" in iou_types:
         # create a Coco-like object that we can use to evaluate detection!
         # anns = []
         # for image_id, gt in enumerate(groundtruths):
@@ -168,7 +169,6 @@ def do_vcr_evaluation(
     #     result_str += '=' * 100 + '\n'
 
     # logger.info(result_str)
-    return -1
     # if "relations" in iou_types:
     #     if output_folder:
     #         torch.save(result_dict, os.path.join(output_folder, 'result_dict.pytorch'))
