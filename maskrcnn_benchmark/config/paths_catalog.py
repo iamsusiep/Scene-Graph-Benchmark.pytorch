@@ -118,7 +118,9 @@ class DatasetCatalog(object):
             "image_file": "/home/suji/spring20/KERN/data/stanford_filtered/image_data.json",
         },
         "vcr":{
-            "img_dir":"/home/suji/spring20/vilbert_beta/data/VCR/vcr1images"
+            "img_dir":"/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",
+            "roidb_file": "/home/suji/spring20/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-with-attri.h5",
+            "dict_file": "/home/suji/spring20/Scene-Graph-Benchmark.pytorch/datasets/vg/VG-SGG-dicts-with-attri.json",
         }
     }
 

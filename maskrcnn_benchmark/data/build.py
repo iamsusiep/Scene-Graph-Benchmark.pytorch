@@ -41,11 +41,13 @@ def get_dataset_statistics(cfg):
 
     statistics = []
     for dataset_name in dataset_names:
+        print("get_dataset_statistics, dataset_name:", dataset_name)
         data = DatasetCatalog.get(dataset_name, cfg)
         factory = getattr(D, data["factory"])
         args = data["args"]
         dataset = factory(**args)
         statistics.append(dataset.get_statistics())
+    print("statistics", statistics)
     logger.info('finish')
 
     assert len(statistics) == 1
@@ -262,6 +264,7 @@ def build_vcr_dataset(cfg, dataset_list, transforms, dataset_catalog):
         data = dataset_catalog.get(dataset_name, cfg) # the datasets
         factory = getattr(D, data["factory"])
         args = data["args"]
+        print("build_vcr_dataset, args:", args)
         # for COCODataset, we want to remove images without annotations
         # during training
         # if data["factory"] == "COCODataset":
