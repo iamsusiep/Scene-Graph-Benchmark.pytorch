@@ -203,8 +203,10 @@ def make_data_loader(cfg, mode='train', is_distributed=False, start_iter=0):
         dataset_list = cfg.DATASETS.TRAIN
     elif mode == 'val':
         dataset_list = cfg.DATASETS.VAL
+    elif mode == 'test':
+        dataset_list =  cfg.DATASETS.TEST
     else:
-        dataset_list = cfg.DATASETS.TEST
+        dataset_list = cfg.DATASETS.VCR
 
     # If bbox aug is enabled in testing, simply set transforms to None and we will apply transforms later
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
