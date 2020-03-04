@@ -25,6 +25,7 @@ class GeneralizedRCNN(nn.Module):
 
     def __init__(self, cfg):
         super(GeneralizedRCNN, self).__init__()
+        print("init GeneralizedRCNN")
         self.cfg = cfg.clone()
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg, self.backbone.out_channels)

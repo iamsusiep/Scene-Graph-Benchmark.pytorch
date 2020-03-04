@@ -72,9 +72,11 @@ def main():
     amp_handle = amp.init(enabled=use_mixed_precision, verbose=cfg.AMP_VERBOSE)
 
     output_dir = cfg.OUTPUT_DIR
+    print("before checkpointer")
     checkpointer = DetectronCheckpointer(cfg, model, save_dir=output_dir)
+    print("checkpointer inited")
     _ = checkpointer.load(cfg.MODEL.WEIGHT)
-
+    print("checkpointer loaded")
     iou_types = ("bbox",)
     if cfg.MODEL.MASK_ON:
         iou_types = iou_types + ("segm",)
