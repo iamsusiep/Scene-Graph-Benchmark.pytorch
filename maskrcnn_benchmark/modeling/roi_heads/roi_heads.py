@@ -75,6 +75,7 @@ class CombinedROIHeads(torch.nn.ModuleDict):
 def build_roi_heads(cfg, in_channels):
     # individually create the heads, that will be combined together
     # afterwards
+    print("build_roi_heads")
     roi_heads = []
     if cfg.MODEL.RETINANET_ON:
         return []
