@@ -104,11 +104,11 @@ class PostProcessor(nn.Module):
 
     def add_important_fields(self, i, boxes, orig_inds, boxlist, boxes_per_cls, relation_mode=False):
         if relation_mode:
-            gt_labels = boxes[i].get_field('labels')[orig_inds]
-            gt_attributes = boxes[i].get_field('attributes')[orig_inds]
+            #gt_labels = boxes[i].get_field('labels')[orig_inds]
+            #gt_attributes = boxes[i].get_field('attributes')[orig_inds]
         
-            boxlist.add_field('labels', gt_labels)
-            boxlist.add_field('attributes', gt_attributes)
+            #boxlist.add_field('labels', gt_labels)
+            #boxlist.add_field('attributes', gt_attributes)
 
             predict_logits = boxes[i].get_field('predict_logits')[orig_inds]
             boxlist.add_field('boxes_per_cls', boxes_per_cls)

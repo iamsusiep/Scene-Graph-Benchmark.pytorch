@@ -41,13 +41,11 @@ def get_dataset_statistics(cfg):
 
     statistics = []
     for dataset_name in dataset_names:
-        print("get_dataset_statistics, dataset_name:", dataset_name)
         data = DatasetCatalog.get(dataset_name, cfg)
         factory = getattr(D, data["factory"])
         args = data["args"]
         dataset = factory(**args)
         statistics.append(dataset.get_statistics())
-    print("statistics", statistics)
     logger.info('finish')
 
     assert len(statistics) == 1
@@ -264,7 +262,6 @@ def build_vcr_dataset(cfg, dataset_list, transforms, dataset_catalog):
         data = dataset_catalog.get(dataset_name, cfg) # the datasets
         factory = getattr(D, data["factory"])
         args = data["args"]
-        print("build_vcr_dataset, args:", args)
         # for COCODataset, we want to remove images without annotations
         # during training
         # if data["factory"] == "COCODataset":
@@ -274,13 +271,9 @@ def build_vcr_dataset(cfg, dataset_list, transforms, dataset_catalog):
         args["transforms"] = transforms # None
         # make dataset from factory
         dataset = factory(**args)
-        print("build_vcr_dataset:", dataset)  
-        datasets.append(dataset)
     return datasets
 
-
-
-def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0):
+def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0, is_train =False):
     num_gpus = get_world_size()
     images_per_batch = cfg.TEST.IMS_PER_BATCH
     assert (
@@ -315,7 +308,10 @@ def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0):
     )
     DatasetCatalog = paths_catalog.DatasetCatalog
     dataset_list =cfg.DATASETS.VCR
-    transforms = None
+    #transforms = None
+
+    is_train = False
+    transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
     datasets = build_vcr_dataset(cfg, dataset_list, transforms, DatasetCatalog)
     data_loaders = []
     for dataset in datasets:

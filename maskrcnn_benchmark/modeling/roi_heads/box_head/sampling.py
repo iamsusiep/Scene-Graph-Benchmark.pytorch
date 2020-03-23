@@ -116,6 +116,8 @@ class FastRCNNSampling(object):
         return proposals
 
     def assign_label_to_proposals(self, proposals, targets):
+        if not targets:
+            return proposals
         for img_idx, (target, proposal) in enumerate(zip(targets, proposals)):
             match_quality_matrix = boxlist_iou(target, proposal)
             matched_idxs = self.proposal_matcher(match_quality_matrix)

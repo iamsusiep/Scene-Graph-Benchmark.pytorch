@@ -16,8 +16,6 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 BOX_SCALE = 1024  # Scale at which we have the boxes
 
 class VCRDataset(torch.utils.data.Dataset):
-    #def __init__(self, split, img_dir, dict_file, transforms=None):
-
     def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
                  filter_empty_rels=True, num_im=-1, num_val_im=5000,
                  filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
@@ -26,17 +24,22 @@ class VCRDataset(torch.utils.data.Dataset):
         self.split = split
         self.img_dir = img_dir
         self.dict_file = dict_file
-
+        print("before info loaded")
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
-
+        print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
-        self.filenames = glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')
+        self.filenames = glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]
         self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
         self.img_info = []
+        
         for index in range(len(self.filenames)):
             img = Image.open(self.filenames[index]).convert("RGB")
+            if transforms is not None:
+                #print("image being transformed")
+                img = transforms(img)
+                #print("image transformed to ", type(img))
             self.imgs.append(img)
-            self.img_info.append({"width": img.size[0], "height":img.size[1]})
+            self.img_info.append({"width": img.shape[0], "height":img.shape[1]})
 
     def __getitem__(self, index):
         # img = Image.open(self.filenames[index]).convert("RGB")
@@ -335,7 +338,7 @@ def load_image_filenames(img_dir, image_file):
     with open(image_file, 'r') as f:
         im_data = json.load(f)
 
-    print("img_dir:{}, image_file:{}".format(img_dir, image_file))
+    #print("img_dir:{}, image_file:{}".format(img_dir, image_file))
     corrupted_ims = ['1592.jpg', '1722.jpg', '4616.jpg', '4617.jpg']
     fns = []
     img_info = []

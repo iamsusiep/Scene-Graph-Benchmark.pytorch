@@ -72,11 +72,8 @@ def main():
     amp_handle = amp.init(enabled=use_mixed_precision, verbose=cfg.AMP_VERBOSE)
 
     output_dir = cfg.OUTPUT_DIR
-    print("before checkpointer")
     checkpointer = DetectronCheckpointer(cfg, model, save_dir=output_dir)
-    print("checkpointer inited")
     _ = checkpointer.load(cfg.MODEL.WEIGHT)
-    print("checkpointer loaded")
     iou_types = ("bbox",)
     if cfg.MODEL.MASK_ON:
         iou_types = iou_types + ("segm",)
@@ -97,6 +94,7 @@ def main():
     # data_loaders_val = make_data_loader(cfg, mode="test", is_distributed=distributed)
     data_loaders_val = make_vcr_data_loader(cfg, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+        print("inference prior", output_folder, dataset_name, data_loader_val)
         inference(
             cfg,
             model,
