@@ -24,14 +24,16 @@ def compute_on_dataset(model, data_loader, device, synchronize_gather=True, time
     for _, batch in enumerate(tqdm(data_loader)):
         with torch.no_grad():
             images, targets, image_ids = batch
-            targets = [target.to(device) for target in targets]
+            #targets = [target.to(device) for target in targets]
             if timer:
                 timer.tic()
             if cfg.TEST.BBOX_AUG.ENABLED:
+                print("one")
                 output = im_detect_bbox_aug(model, images, device)
             else:
+                print("two")
                 # relation detection needs the targets
-                output = model(images.to(device), targets)
+                output = model(images.to(device), None)
             if timer:
                 if not cfg.MODEL.DEVICE == 'cpu':
                     torch.cuda.synchronize()
@@ -93,7 +95,9 @@ def inference(
         output_folder=None,
         logger=None,
 ):
+    print("inference, pre load_prediction_from_cache")
     load_prediction_from_cache = cfg.TEST.ALLOW_LOAD_FROM_CACHE and output_folder is not None and os.path.exists(os.path.join(output_folder, "eval_results.pytorch"))
+    print("inference, post load_prediction_from_cache")
     # convert to a torch.device for efficiency
     device = torch.device(device)
     num_devices = get_world_size()
@@ -108,6 +112,7 @@ def inference(
         predictions = torch.load(os.path.join(output_folder, "eval_results.pytorch"), map_location=torch.device("cpu"))['predictions']
     else:
         predictions = compute_on_dataset(model, data_loader, device, synchronize_gather=cfg.TEST.RELATION.SYNC_GATHER, timer=inference_timer)
+    print("pred loaded, compute_on_dataset")
     # wait for all processes to complete before measuring the time
     synchronize()
     total_time = total_timer.toc()

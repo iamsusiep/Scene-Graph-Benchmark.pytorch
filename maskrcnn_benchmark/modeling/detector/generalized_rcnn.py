@@ -25,7 +25,6 @@ class GeneralizedRCNN(nn.Module):
 
     def __init__(self, cfg):
         super(GeneralizedRCNN, self).__init__()
-        print("init GeneralizedRCNN")
         self.cfg = cfg.clone()
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
@@ -44,7 +43,9 @@ class GeneralizedRCNN(nn.Module):
                 like `scores`, `labels` and `mask` (for Mask R-CNN models).
 
         """
+        print("GeneralizedRCNN model forward")
         if self.training and targets is None:
+            print("shouldn't be here")
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
         features = self.backbone(images.tensors)
