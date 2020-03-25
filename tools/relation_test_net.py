@@ -93,8 +93,10 @@ def main():
     # change
     # data_loaders_val = make_data_loader(cfg, mode="test", is_distributed=distributed)
     data_loaders_val = make_vcr_data_loader(cfg, is_distributed=distributed)
+    #print("inference prior", output_folders, dataset_names, data_loaders_val)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        print("inference prior", output_folder, dataset_name, data_loader_val)
+        #print("inference prior")
+        #print("inference prior", output_folder, dataset_name, data_loader_val)
         inference(
             cfg,
             model,
@@ -108,7 +110,7 @@ def main():
             output_folder=output_folder,
         )
         synchronize()
-
+    #print("comleted inference")
 
 if __name__ == "__main__":
     main()
