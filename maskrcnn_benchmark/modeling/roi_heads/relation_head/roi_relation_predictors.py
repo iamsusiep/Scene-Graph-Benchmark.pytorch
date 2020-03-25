@@ -492,7 +492,7 @@ class CausalAnalysisPredictor(nn.Module):
         assert self.pooling_dim == config.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
 
         # convey statistics into FrequencyBias to avoid loading again
-        # self.freq_bias = FrequencyBias(config, statistics)
+        self.freq_bias = FrequencyBias(config, statistics)
 
         # add spatial emb for visual feature
         if self.spatial_for_vision:
@@ -651,7 +651,6 @@ class CausalAnalysisPredictor(nn.Module):
             frq_dists = self.freq_bias.index_with_probability(frq_rep)
         else:
             frq_dists = self.freq_bias.index_with_labels(frq_rep.long())
-
         if mean_ctx:
             ctx_rep = ctx_rep.mean(-1).unsqueeze(-1)
         vis_dists = self.vis_compress(vis_rep)

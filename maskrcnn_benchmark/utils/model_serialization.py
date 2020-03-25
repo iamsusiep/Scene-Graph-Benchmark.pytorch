@@ -22,7 +22,6 @@ def align_and_update_state_dicts(model_state_dict, loaded_state_dict, load_mappi
     we want to match backbone[0].body.conv1.weight to conv1.weight, and
     backbone[0].body.res2.conv1.weight to res2.conv1.weight.
     """
-    print("align_and_update_state_dicts")
     logger = logging.getLogger(__name__)
     current_keys = sorted(list(model_state_dict.keys()))
     loaded_keys = sorted(list(loaded_state_dict.keys()))
@@ -46,7 +45,6 @@ def align_and_update_state_dicts(model_state_dict, loaded_state_dict, load_mappi
     max_match_size, idxs = match_matrix.max(1)
     # remove indices that correspond to no-match
     idxs[max_match_size == 0] = -1
-    print("idxs.tolist()", idxs.tolist())
     # used for logging
     max_size = max([len(key) for key in current_keys]) if current_keys else 1
     max_size_loaded = max([len(key) for key in loaded_keys]) if loaded_keys else 1
@@ -84,7 +82,6 @@ def strip_prefix_if_present(state_dict, prefix):
 
 
 def load_state_dict(model, loaded_state_dict, load_mapping):
-    print("load_state_dict")
     model_state_dict = model.state_dict()
     # if the state_dict comes from a model that was wrapped in a
     # DataParallel or DistributedDataParallel during serialization,

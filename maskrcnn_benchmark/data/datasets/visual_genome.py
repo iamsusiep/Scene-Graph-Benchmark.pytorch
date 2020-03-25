@@ -20,13 +20,14 @@ class VCRDataset(torch.utils.data.Dataset):
                  filter_empty_rels=True, num_im=-1, num_val_im=5000,
                  filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
         assert split in {'train', 'val', 'test'}
+        #print("VCRData init")
         self.flip_aug = flip_aug
         self.split = split
         self.img_dir = img_dir
         self.dict_file = dict_file
-        print("before info loaded")
+        #print("before info loaded")
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
-        print("info loaded")
+        #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.filenames = glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]
         self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
@@ -298,8 +299,6 @@ def correct_img_info(img_dir, image_file):
         img_data = Image.open(filename).convert("RGB")
         if img['width'] != img_data.size[0] or img['height'] != img_data.size[1]:
             print('--------- False id: ', i, '---------')
-            print(img_data.size)
-            print(img)
             data[i]['width'] = img_data.size[0]
             data[i]['height'] = img_data.size[1]
     with open(image_file, 'w') as outfile:  

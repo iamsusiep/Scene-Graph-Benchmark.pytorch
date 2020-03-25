@@ -262,6 +262,7 @@ def build_vcr_dataset(cfg, dataset_list, transforms, dataset_catalog):
         data = dataset_catalog.get(dataset_name, cfg) # the datasets
         factory = getattr(D, data["factory"])
         args = data["args"]
+        #print("build_vcr_dataset, args:", args) 
         # for COCODataset, we want to remove images without annotations
         # during training
         # if data["factory"] == "COCODataset":
@@ -271,7 +272,7 @@ def build_vcr_dataset(cfg, dataset_list, transforms, dataset_catalog):
         args["transforms"] = transforms # None
         # make dataset from factory
         dataset = factory(**args)
-    return datasets
+    return [dataset]
 
 def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0, is_train =False):
     num_gpus = get_world_size()
@@ -313,6 +314,7 @@ def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0, is_train =Fals
     is_train = False
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
     datasets = build_vcr_dataset(cfg, dataset_list, transforms, DatasetCatalog)
+    #print("make_vcr_data_loader", datasets)
     data_loaders = []
     for dataset in datasets:
         sampler = make_data_sampler(dataset, shuffle, is_distributed)
@@ -329,4 +331,5 @@ def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0, is_train =Fals
             collate_fn=collator,
         )
         data_loaders.append(data_loader)
+    #print("dataloaders", data_loaders)
     return data_loaders
