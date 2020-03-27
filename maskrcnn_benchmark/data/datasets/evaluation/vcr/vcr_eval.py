@@ -188,8 +188,10 @@ def save_output(output_folder, groundtruths, predictions, dataset):
         #    f.write(result_str)
         # visualization information
         visual_info = []
-        for image_id, (groundtruth, prediction) in enumerate(zip(groundtruths, predictions)):
+        #for image_id, (groundtruth, prediction) in enumerate(zip(groundtruths, predictions)):
+        for image_id, prediction in enumerate( predictions):
             img_file = dataset.filenames[image_id]#os.path.abspath(dataset.filenames[image_id])
+            print("save_output", img_file)
             # groundtruth = [
             #     [b[0], b[1], b[2], b[3], dataset.categories[l]] # xyxy, str
             #     for b, l in zip(groundtruth.bbox.tolist(), groundtruth.get_field('labels').tolist())
