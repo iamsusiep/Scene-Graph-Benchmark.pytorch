@@ -14,6 +14,7 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 
 BOX_SCALE = 1024  # Scale at which we have the boxes
+m = {'hairdrier': 'hair drier', 'pottedplant': 'potted plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'dining table', 'parkingmeter': 'parking meter', 'sportsball': 'ball', 'wineglass': 'wine glass', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
 
 class VCRDataset(torch.utils.data.Dataset):
     def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
@@ -29,23 +30,93 @@ class VCRDataset(torch.utils.data.Dataset):
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
         #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
-        self.filenames = glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]
-        self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
-        self.img_info = []
+        self.filenames = []
+        for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]:
+            json_fn = fn.replace("jpg", "json")
+            if not os.path.exists(json_fn):
+                continue
+            self.filenames.append(fn)
+
+        print("self.filenames",self.filenames)
+        # self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
+        # self.img_info = []
         
-        for index in range(len(self.filenames)):
-            img = Image.open(self.filenames[index]).convert("RGB")
-            if transforms is not None:
-                #print("image being transformed")
-                img = transforms(img)
-                #print("image transformed to ", type(img))
-            self.imgs.append(img)
-            self.img_info.append({"width": img.shape[0], "height":img.shape[1]})
+        # for index in range(len(self.filenames)):
+        #     img = Image.open(self.filenames[index]).convert("RGB")
+        #     if transforms is not None:
+        #         #print("image being transformed")
+        #         img = transforms(img)
+        #         #print("image transformed to ", type(img))
+        #     self.imgs.append(img)
+        #     self.img_info.append({"width": img.shape[0], "height":img.shape[1]})
+
+
+    def get_groundtruth(self, index, evaluation=False, flip_img=False):
+        with open(fn.replace("jpg", "json")) as f:
+            data = json.load(f)
+        w, h=data['width'], data['height']
+        bb_list = np.array(data['boxes'])
+        obj_list = np.array([self.ind_to_classes[m[name]] for name in data['names'] if name in m.keys() else  self.ind_to_classes[name]])
+
+        # important: recover original box from BOX_SCALE
+        box =bb_list / BOX_SCALE * max(w, h)
+        box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
+        if flip_img:
+            new_xmin = w - box[:,2]
+            new_xmax = w - box[:,0]
+            box[:,0] = new_xmin
+            box[:,2] = new_xmax
+        target = BoxList(box, (w, h), 'xyxy') # xyxy
+
+        target.add_field("labels", torch.from_numpy(obj_list))
+        target.add_field("attributes", torch.from_numpy(np.zeros(obj_list.shape[0],10)))
+
+        # relation = self.relationships[index].copy() # (num_rel, 3)
+        # if self.filter_duplicate_rels:
+        #     # Filter out dupes!
+        #     assert self.split == 'train'
+        #     old_size = relation.shape[0]
+        #     all_rel_sets = defaultdict(list)
+        #     for (o0, o1, r) in relation:
+        #         all_rel_sets[(o0, o1)].append(r)
+        #     relation = [(k[0], k[1], np.random.choice(v)) for k,v in all_rel_sets.items()]
+        #     relation = np.array(relation, dtype=np.int32)
+        
+        # add relation to target
+        num_box = len(target)
+        relation_map = torch.zeros((num_box, num_box), dtype=torch.int64)
+        # for i in range(relation.shape[0]):
+        #     if relation_map[int(relation[i,0]), int(relation[i,1])] > 0:
+        #         if (random.random() > 0.5):
+        #             relation_map[int(relation[i,0]), int(relation[i,1])] = int(relation[i,2])
+        #     else:
+        #         relation_map[int(relation[i,0]), int(relation[i,1])] = int(relation[i,2])
+        target.add_field("relation", relation_map, is_triplet=True)
+
+        if evaluation:
+            target = target.clip_to_image(remove_empty=False)
+            # target.add_field("relation_tuple", torch.LongTensor(relation)) # for evaluation
+            return target
+        else:
+            target = target.clip_to_image(remove_empty=True)
+            return target
+
+
 
     def __getitem__(self, index):
-        # img = Image.open(self.filenames[index]).convert("RGB")
+        img = Image.open(self.filenames[index]).convert("RGB")
         # w, h = img.size
-        return self.imgs[index], None, index
+        flip_img = (random.random() > 0.5) and self.flip_aug and (self.split == 'train')
+        
+        target = self.get_groundtruth(index, flip_img)
+
+        if flip_img:
+            img = img.transpose(method=Image.FLIP_LEFT_RIGHT)
+
+        if self.transforms is not None:
+            img, target = self.transforms(img, target)
+
+        return img, target, index
 
     def get_img_info(self, index):
         # WARNING: original image_file.json has several pictures with false image size
@@ -178,6 +249,9 @@ class VGDataset(torch.utils.data.Dataset):
     def get_groundtruth(self, index, evaluation=False, flip_img=False):
         img_info = self.get_img_info(index)
         w, h = img_info['width'], img_info['height']
+        bb_list =data['boxes']
+        obj_list = data['names']
+
         # important: recover original box from BOX_SCALE
         box = self.gt_boxes[index] / BOX_SCALE * max(w, h)
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
