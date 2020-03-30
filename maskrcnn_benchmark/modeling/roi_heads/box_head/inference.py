@@ -18,7 +18,7 @@ class PostProcessor(nn.Module):
 
     def __init__(
         self,
-        score_thresh=0.05,
+        score_thresh=0.5,
         nms=0.5,
         post_nms_per_cls_topn=300,
         nms_filter_duplicates=True,
@@ -36,7 +36,7 @@ class PostProcessor(nn.Module):
             box_coder (BoxCoder)
         """
         super(PostProcessor, self).__init__()
-        self.score_thresh = score_thresh
+        self.score_thresh = 0.5#score_thresh
         self.nms = nms
         self.post_nms_per_cls_topn = post_nms_per_cls_topn
         self.nms_filter_duplicates = nms_filter_duplicates
@@ -166,6 +166,7 @@ class PostProcessor(nn.Module):
         orig_inds = []
         # Apply threshold on detection probabilities and apply NMS
         # Skip j = 0, because it's the background class
+        print("self.score_thresh", self.score_thresh)
         inds_all = scores > self.score_thresh
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
@@ -217,8 +218,9 @@ class PostProcessor(nn.Module):
             image_thresh, _ = torch.kthvalue(
                 cls_scores.cpu(), number_of_detections - self.detections_per_img + 1
             )
-            print(" image_thresh.item()",  image_thresh.item())
-            keep = cls_scores >= image_thresh.item()
+            #print(" image_thresh.item()",  image_thresh.item())
+            #keep = cls_scores >= image_thresh.item()
+            keep = cls_scores >= .5 
             keep = torch.nonzero(keep).squeeze(1)
             result = result[keep]
             orig_inds = orig_inds[keep]
