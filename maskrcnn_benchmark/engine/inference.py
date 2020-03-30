@@ -24,14 +24,14 @@ def compute_on_dataset(model, data_loader, device, synchronize_gather=True, time
     for _, batch in enumerate(tqdm(data_loader)):
         with torch.no_grad():
             images, targets, image_ids = batch
-            #targets = [target.to(device) for target in targets]
+            targets = [target.to(device) for target in targets]
             if timer:
                 timer.tic()
             if cfg.TEST.BBOX_AUG.ENABLED:
                 output = im_detect_bbox_aug(model, images, device)
             else:
                 # relation detection needs the targets
-                output = model(images.to(device), None)
+                output = model(images.to(device), targets)
             if timer:
                 if not cfg.MODEL.DEVICE == 'cpu':
                     torch.cuda.synchronize()

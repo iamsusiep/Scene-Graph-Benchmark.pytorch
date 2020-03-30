@@ -14,7 +14,7 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 
 BOX_SCALE = 1024  # Scale at which we have the boxes
-m = {'hairdrier': 'hair drier', 'pottedplant': 'potted plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'dining table', 'parkingmeter': 'parking meter', 'sportsball': 'ball', 'wineglass': 'wine glass', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
+m = {'oven': 'cabinet','spoon':'fork','keyboard': 'laptop', 'scissors':'handle', 'refrigerator':'drawer', 'remote': 'phone', 'tv':'screen','handbag':'bag', 'hairdrier': 'hair drier', 'pottedplant': 'plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'table', 'parkingmeter': 'parking meter', 'sportsball': 'ball', 'wineglass': 'cup', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
 
 class VCRDataset(torch.utils.data.Dataset):
     def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
@@ -26,10 +26,12 @@ class VCRDataset(torch.utils.data.Dataset):
         self.split = split
         self.img_dir = img_dir
         self.dict_file = dict_file
+        self.transforms = transforms
         #print("before info loaded")
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
         #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
+        self.mydict = {self.ind_to_classes[i]:i for i in range(len(self.ind_to_classes))}
         self.filenames = []
         for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]:
             json_fn = fn.replace("jpg", "json")
@@ -39,27 +41,36 @@ class VCRDataset(torch.utils.data.Dataset):
 
         print("self.filenames",self.filenames)
         # self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
-        # self.img_info = []
+        self.img_info = []
         
-        # for index in range(len(self.filenames)):
-        #     img = Image.open(self.filenames[index]).convert("RGB")
-        #     if transforms is not None:
-        #         #print("image being transformed")
-        #         img = transforms(img)
-        #         #print("image transformed to ", type(img))
-        #     self.imgs.append(img)
-        #     self.img_info.append({"width": img.shape[0], "height":img.shape[1]})
+        for index in range(len(self.filenames)):
+            img = Image.open(self.filenames[index]).convert("RGB")
+            #if transforms is not None:
+                #print("image being transformed")
+                #img = transforms(img)
+                #print("image transformed to ", type(img))
+            #self.imgs.append(img)
+            self.img_info.append({"width": img.size[0], "height":img.size[1]})
 
 
     def get_groundtruth(self, index, evaluation=False, flip_img=False):
+        fn = self.filenames[index]
         with open(fn.replace("jpg", "json")) as f:
             data = json.load(f)
         w, h=data['width'], data['height']
-        bb_list = np.array(data['boxes'])
-        obj_list = np.array([self.ind_to_classes[m[name]] for name in data['names'] if name in m.keys() else  self.ind_to_classes[name]])
-
+        bb_list = np.array([x[:-1] for x in data['boxes']])
+        #print("bb_list", bb_list)
+        obj_list = []
+        for name in data['names']:
+            if name in m.keys():
+                obj_list.append(self.mydict[m[name]])
+            else:
+                obj_list.append(self.mydict[name])
+        #obj_list = np.array([self.ind_to_classes[m[name]] for name in data['names'] if name in m.keys() else  self.ind_to_classes[name]])
+        obj_list = np.array(obj_list)
         # important: recover original box from BOX_SCALE
         box =bb_list / BOX_SCALE * max(w, h)
+        #print("box", box)
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
         if flip_img:
             new_xmin = w - box[:,2]
@@ -69,7 +80,9 @@ class VCRDataset(torch.utils.data.Dataset):
         target = BoxList(box, (w, h), 'xyxy') # xyxy
 
         target.add_field("labels", torch.from_numpy(obj_list))
-        target.add_field("attributes", torch.from_numpy(np.zeros(obj_list.shape[0],10)))
+        #print("len(obj_list),",len(obj_list))
+        #print(np.zeros(len(obj_list),10))
+        target.add_field("attributes", torch.from_numpy(np.zeros((len(obj_list),10))))
 
         # relation = self.relationships[index].copy() # (num_rel, 3)
         # if self.filter_duplicate_rels:
