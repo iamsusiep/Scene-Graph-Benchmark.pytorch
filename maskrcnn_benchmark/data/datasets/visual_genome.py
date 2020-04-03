@@ -14,7 +14,7 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 
 BOX_SCALE = 1024  # Scale at which we have the boxes
-m = {'oven': 'cabinet','spoon':'fork','keyboard': 'laptop', 'scissors':'handle', 'refrigerator':'drawer', 'remote': 'phone', 'tv':'screen','handbag':'bag', 'hairdrier': 'hair drier', 'pottedplant': 'plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'table', 'parkingmeter': 'parking meter', 'sportsball': 'ball', 'wineglass': 'cup', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
+m = {'knife':'fork', 'cellphone': 'phone','backpack':'bag','ball':'box', 'oven': 'cabinet','spoon':'fork','keyboard': 'laptop', 'scissors':'handle', 'refrigerator':'drawer', 'remote': 'phone', 'tv':'screen','handbag':'bag', 'hairdrier': 'hair drier', 'pottedplant': 'plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'table', 'parkingmeter': 'parking meter', 'sportsball': 'box', 'wineglass': 'cup', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
 
 class VCRDataset(torch.utils.data.Dataset):
     def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
@@ -33,7 +33,7 @@ class VCRDataset(torch.utils.data.Dataset):
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.mydict = {self.ind_to_classes[i]:i for i in range(len(self.ind_to_classes))}
         self.filenames = []
-        for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:30]:
+        for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:100]:
             json_fn = fn.replace("jpg", "json")
             if not os.path.exists(json_fn):
                 continue
