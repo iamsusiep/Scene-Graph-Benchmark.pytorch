@@ -73,7 +73,7 @@ class ROIBoxHead(torch.nn.Module):
                 x, result = self.post_processor((x, class_logits, box_regression), proposals, relation_mode=True)
                 # note x is not matched with processed_proposals, so sharing x is not permitted
                 return x, result, {}
-
+        self.training = False
         #####################################################################
         # Original box head (relation_on = False)
         #####################################################################

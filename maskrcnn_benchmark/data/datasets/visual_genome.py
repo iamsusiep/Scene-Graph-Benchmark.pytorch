@@ -9,12 +9,12 @@ from collections import defaultdict
 from tqdm import tqdm
 import random
 import glob
-
+import pandas as pd
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 
 BOX_SCALE = 1024  # Scale at which we have the boxes
-m = {'knife':'fork', 'cellphone': 'phone','backpack':'bag','ball':'box', 'oven': 'cabinet','spoon':'fork','keyboard': 'laptop', 'scissors':'handle', 'refrigerator':'drawer', 'remote': 'phone', 'tv':'screen','handbag':'bag', 'hairdrier': 'hair drier', 'pottedplant': 'plant', 'trafficlight': 'traffic light', 'teddybear':'teddy bear', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'table', 'parkingmeter': 'parking meter', 'sportsball': 'box', 'wineglass': 'cup', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
+m = {'knife':'fork', 'cellphone': 'phone','backpack':'bag','ball':'box', 'oven': 'cabinet','spoon':'fork','keyboard': 'laptop', 'scissors':'handle', 'refrigerator':'drawer', 'remote': 'phone', 'tv':'screen','handbag':'bag', 'hairdrier': 'hair drier', 'pottedplant': 'plant', 'baseballbat': 'baseball bat', 'baseballglove': 'baseball glove', 'tennisracket': 'tennis racket', 'diningtable': 'table', 'parkingmeter': 'parking meter', 'sportsball': 'box', 'wineglass': 'cup', 'hotdog': 'hot dog', 'stopsign': 'stop sign', 'firehydrant': 'fire hydrant'}
 
 class VCRDataset(torch.utils.data.Dataset):
     def __init__(self, split, img_dir, roidb_file, dict_file, transforms=None,
@@ -32,14 +32,20 @@ class VCRDataset(torch.utils.data.Dataset):
         #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.mydict = {self.ind_to_classes[i]:i for i in range(len(self.ind_to_classes))}
-        self.filenames = []
+        #self.filenames = []
+        df = pd.read_csv('/home/suji/spring20/filenames.csv')
+        self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['img_fn'])]
+        #print(self.filenames)
+        '''
+        with open("/home/suji/spring20/filenames.csv", "r") as r:
+            self.filenames = r.readlines()
         for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:100]:
             json_fn = fn.replace("jpg", "json")
             if not os.path.exists(json_fn):
                 continue
             self.filenames.append(fn)
-
-        print("self.filenames",self.filenames)
+        '''
+        # print("self.filenames",self.filenames)
         # self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
         self.img_info = []
         
@@ -53,11 +59,13 @@ class VCRDataset(torch.utils.data.Dataset):
             self.img_info.append({"width": img.size[0], "height":img.size[1]})
 
 
-    def get_groundtruth(self, index, evaluation=False, flip_img=False):
+    def get_groundtruth(self, index, evaluation=True, flip_img=False):
+        #print(fn)
         fn = self.filenames[index]
         with open(fn.replace("jpg", "json")) as f:
             data = json.load(f)
         w, h=data['width'], data['height']
+        assert len(data['boxes']) != 0
         bb_list = np.array([x[:-1] for x in data['boxes']])
         #print("bb_list", bb_list)
         obj_list = []
@@ -65,20 +73,28 @@ class VCRDataset(torch.utils.data.Dataset):
             if name in m.keys():
                 obj_list.append(self.mydict[m[name]])
             else:
-                obj_list.append(self.mydict[name])
+                if name not in self.mydict.keys():
+                    obj_list.append(self.mydict['fork'])
+                else:
+                    obj_list.append(self.mydict[name])
         #obj_list = np.array([self.ind_to_classes[m[name]] for name in data['names'] if name in m.keys() else  self.ind_to_classes[name]])
         obj_list = np.array(obj_list)
         # important: recover original box from BOX_SCALE
         box =bb_list / BOX_SCALE * max(w, h)
-        #print("box", box)
+        assert len(box) != 0
+        #print("box", len(box))
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
+        print(fn, " box", box, box.size())
+        '''
         if flip_img:
             new_xmin = w - box[:,2]
             new_xmax = w - box[:,0]
             box[:,0] = new_xmin
             box[:,2] = new_xmax
+        '''
         target = BoxList(box, (w, h), 'xyxy') # xyxy
-
+        #print("target after box", target)
+        assert len(target) != 0
         target.add_field("labels", torch.from_numpy(obj_list))
         #print("len(obj_list),",len(obj_list))
         #print(np.zeros(len(obj_list),10))
@@ -105,30 +121,34 @@ class VCRDataset(torch.utils.data.Dataset):
         #     else:
         #         relation_map[int(relation[i,0]), int(relation[i,1])] = int(relation[i,2])
         target.add_field("relation", relation_map, is_triplet=True)
-
+        target = target.clip_to_image(remove_empty=False)
+        # target.add_field("relation_tuple", torch.LongTensor(relation)) # for evaluation
+        return target
+        '''
         if evaluation:
             target = target.clip_to_image(remove_empty=False)
+            print("two target", target)
             # target.add_field("relation_tuple", torch.LongTensor(relation)) # for evaluation
             return target
         else:
             target = target.clip_to_image(remove_empty=True)
             return target
-
+        '''
 
 
     def __getitem__(self, index):
-        img = Image.open(self.filenames[index]).convert("RGB")
+        fn = self.filenames[index]
+        img = Image.open(fn).convert("RGB")
         # w, h = img.size
         flip_img = (random.random() > 0.5) and self.flip_aug and (self.split == 'train')
         
         target = self.get_groundtruth(index, flip_img)
-
         if flip_img:
             img = img.transpose(method=Image.FLIP_LEFT_RIGHT)
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
-
+        print(os.path.basename(fn), " target after", target)
         return img, target, index
 
     def get_img_info(self, index):
