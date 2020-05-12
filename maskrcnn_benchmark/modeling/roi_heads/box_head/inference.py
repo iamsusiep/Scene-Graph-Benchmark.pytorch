@@ -18,7 +18,7 @@ class PostProcessor(nn.Module):
 
     def __init__(
         self,
-        score_thresh=0.5,
+        score_thresh=0.05,
         nms=0.5,
         post_nms_per_cls_topn=300,
         nms_filter_duplicates=True,
@@ -36,7 +36,7 @@ class PostProcessor(nn.Module):
             box_coder (BoxCoder)
         """
         super(PostProcessor, self).__init__()
-        self.score_thresh = 0.5#score_thresh
+        self.score_thresh = score_thresh
         self.nms = nms
         self.post_nms_per_cls_topn = post_nms_per_cls_topn
         self.nms_filter_duplicates = nms_filter_duplicates
@@ -168,6 +168,10 @@ class PostProcessor(nn.Module):
         # Skip j = 0, because it's the background class
         print("self.score_thresh", self.score_thresh)
         inds_all = scores > self.score_thresh
+        print("inds_all", inds_all)
+        if len(inds_all) == 0:
+            inds_all = scores >= min(scores)
+            print("redo inds_all", inds_all)
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
             scores_j = scores[inds, j]

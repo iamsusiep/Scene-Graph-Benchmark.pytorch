@@ -74,7 +74,7 @@ class VCRDataset(torch.utils.data.Dataset):
         assert len(box) != 0
         #print("box", len(box))
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
-        print(fn, " box", box, box.size())
+        #print(fn, " box", box, box.size())
         '''
         if flip_img:
             new_xmin = w - box[:,2]
