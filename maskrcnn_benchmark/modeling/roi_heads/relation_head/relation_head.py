@@ -65,7 +65,10 @@ class ROIRelationHead(torch.nn.Module):
 
         # use box_head to extract features that will be fed to the later predictor processing
         roi_features = self.box_feature_extractor(features, proposals)
-
+        orig_features = roi_features.clone().detach()
+        print("reln", len(proposals))
+        print("orig_features", orig_features.shape)
+        print("", )
         if self.cfg.MODEL.ATTRIBUTE_ON:
             att_features = self.att_feature_extractor(features, proposals)
             roi_features = torch.cat((roi_features, att_features), dim=-1)
@@ -82,7 +85,7 @@ class ROIRelationHead(torch.nn.Module):
         # for test
         if not self.training:
             result = self.post_processor((relation_logits, refine_logits), rel_pair_idxs, proposals)
-            return roi_features, result, {}
+            return roi_features, result, {}, orig_features
 
         loss_relation, loss_refine = self.loss_evaluator(proposals, rel_labels, relation_logits, refine_logits)
 
@@ -93,7 +96,7 @@ class ROIRelationHead(torch.nn.Module):
 
         output_losses.update(add_losses)
 
-        return roi_features, proposals, output_losses
+        return roi_features, proposals, output_losses, orig_features
 
 
 def build_roi_relation_head(cfg, in_channels):

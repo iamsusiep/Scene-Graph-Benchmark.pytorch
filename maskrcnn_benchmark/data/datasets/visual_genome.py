@@ -1,3 +1,4 @@
+import ast
 import os
 import sys
 import torch
@@ -32,31 +33,19 @@ class VCRDataset(torch.utils.data.Dataset):
         #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.mydict = {self.ind_to_classes[i]:i for i in range(len(self.ind_to_classes))}
+        df = pd.read_csv("/home/suji/spring20/Scene-Graph-Benchmark.pytorch/vcr_train_fns.csv")
+        
+        self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['fn'])]
         #self.filenames = []
-        df = pd.read_csv('/home/suji/spring20/filenames.csv')
-        self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['img_fn'])]
+        #df = pd.read_csv('/home/suji/spring20/filenames.csv')
+        #self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['img_fn'])]
         #print(self.filenames)
-        '''
-        with open("/home/suji/spring20/filenames.csv", "r") as r:
-            self.filenames = r.readlines()
-        for fn in glob.glob('/home/suji/spring20/vilbert_beta/data/VCR/vcr1images/*/*.jpg')[:100]:
-            json_fn = fn.replace("jpg", "json")
-            if not os.path.exists(json_fn):
-                continue
-            self.filenames.append(fn)
-        '''
         # print("self.filenames",self.filenames)
         # self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
         self.img_info = []
-        
-        for index in range(len(self.filenames)):
-            img = Image.open(self.filenames[index]).convert("RGB")
-            #if transforms is not None:
-                #print("image being transformed")
-                #img = transforms(img)
-                #print("image transformed to ", type(img))
-            #self.imgs.append(img)
-            self.img_info.append({"width": img.size[0], "height":img.size[1]})
+        for tup in list(df['width_height']) :
+            w, h = ast.literal_eval(tup)
+            self.img_info.append({"width": w, "height":h})
 
 
     def get_groundtruth(self, index, evaluation=True, flip_img=False):
@@ -70,13 +59,14 @@ class VCRDataset(torch.utils.data.Dataset):
         #print("bb_list", bb_list)
         obj_list = []
         for name in data['names']:
-            if name in m.keys():
-                obj_list.append(self.mydict[m[name]])
-            else:
-                if name not in self.mydict.keys():
-                    obj_list.append(self.mydict['fork'])
-                else:
-                    obj_list.append(self.mydict[name])
+            obj_list.append(self.mydict['fork'])
+            #if name in m.keys():
+            #    obj_list.append(self.mydict[m[name]])
+            #else:
+            #    if name not in self.mydict.keys():
+            #        obj_list.append(self.mydict['fork'])
+            #    else:
+            #        obj_list.append(self.mydict[name])
         #obj_list = np.array([self.ind_to_classes[m[name]] for name in data['names'] if name in m.keys() else  self.ind_to_classes[name]])
         obj_list = np.array(obj_list)
         # important: recover original box from BOX_SCALE
