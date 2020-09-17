@@ -24,7 +24,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
 
     def forward(self, features, proposals, targets=None, logger=None):
         losses = {}
-        x, detections, loss_box = self.box(features, proposals, targets)
+        #print("roi, proposals", proposals)
+        x, detections, loss_box, orig_features = self.box(features, proposals, targets)
+        #print("ori_features", orig_features)
+        #print("len(orig_features)", len(orig_features))
         if not self.cfg.MODEL.RELATION_ON:
             # During the relationship training stage, the bbox_proposal_network should be fixed, and no loss. 
             losses.update(loss_box)
@@ -66,10 +69,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
             # it may be not safe to share features due to post processing
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x, detections, loss_relation, orig_features = self.relation(features, detections, targets, logger)
+            x, detections, loss_relation = self.relation(features, detections, targets, logger)
             losses.update(loss_relation)
-
-        return x, detections, losses, orig_features
+        print("before return roi head")
+        return x, detections, losses, orig_features, proposals
 
 
 def build_roi_heads(cfg, in_channels):

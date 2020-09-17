@@ -106,8 +106,6 @@ class Pooler(nn.Module):
         """
         num_levels = len(self.poolers)
         rois = self.convert_to_roi_format(boxes)
-        print("rois.size", rois.size())
-        print("num_levels", num_levels)
         assert rois.size(0) > 0
         if num_levels == 1:
             return self.poolers[0](x[0], rois)

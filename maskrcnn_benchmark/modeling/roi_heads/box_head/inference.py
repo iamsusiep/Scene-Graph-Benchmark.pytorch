@@ -80,27 +80,33 @@ class PostProcessor(nn.Module):
         num_classes = class_prob.shape[1]
 
         features = features.split(boxes_per_image, dim=0)
+        #print('features', features[0].shape)
         proposals = proposals.split(boxes_per_image, dim=0)
+        #print("proposals", proposals[0].shape)
         class_prob = class_prob.split(boxes_per_image, dim=0)
-
         results = []
         nms_features = []
         for i, (prob, boxes_per_img, image_shape) in enumerate(zip(
             class_prob, proposals, image_shapes
         )):
             boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
+            #print("boxlist before filter results", boxlist)
             boxlist = boxlist.clip_to_image(remove_empty=False)
+            #print("boxlist clip in `filter results", boxlist)
             assert self.bbox_aug_enabled == False
             if not self.bbox_aug_enabled:  # If bbox aug is enabled, we will do it later
                 boxlist, orig_inds, boxes_per_cls = self.filter_results(boxlist, num_classes)
+                #print("boxlist after filter_results", boxlist)
             # add 
             boxlist = self.add_important_fields(i, boxes, orig_inds, boxlist, boxes_per_cls, relation_mode)
             
             results.append(boxlist)
+            #print("i", i, "orig_inds:", orig_inds)
             nms_features.append(features[i][orig_inds])
-        
+         
         nms_features = torch.cat(nms_features, dim=0)
-        return nms_features, results
+        #print('nms_features.shape', nms_features.shape)
+        return nms_features, results, features
 
     def add_important_fields(self, i, boxes, orig_inds, boxlist, boxes_per_cls, relation_mode=False):
         if relation_mode:
@@ -166,12 +172,8 @@ class PostProcessor(nn.Module):
         orig_inds = []
         # Apply threshold on detection probabilities and apply NMS
         # Skip j = 0, because it's the background class
-        print("self.score_thresh", self.score_thresh)
+        #print("self.score_thresh", self.score_thresh)
         inds_all = scores > self.score_thresh
-        print("inds_all", inds_all)
-        if len(inds_all) == 0:
-            inds_all = scores >= min(scores)
-            print("redo inds_all", inds_all)
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
             scores_j = scores[inds, j]
@@ -223,8 +225,7 @@ class PostProcessor(nn.Module):
                 cls_scores.cpu(), number_of_detections - self.detections_per_img + 1
             )
             #print(" image_thresh.item()",  image_thresh.item())
-            #keep = cls_scores >= image_thresh.item()
-            keep = cls_scores >= .5 
+            keep = cls_scores >= image_thresh.item()
             keep = torch.nonzero(keep).squeeze(1)
             result = result[keep]
             orig_inds = orig_inds[keep]

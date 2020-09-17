@@ -22,44 +22,34 @@ class VCRDataset(torch.utils.data.Dataset):
                  filter_empty_rels=True, num_im=-1, num_val_im=5000,
                  filter_duplicate_rels=True, filter_non_overlap=True, flip_aug=False):
         assert split in {'train', 'val', 'test'}
-        #print("VCRData init")
         self.flip_aug = flip_aug
         self.split = split
         self.img_dir = img_dir
         self.dict_file = dict_file
         self.transforms = transforms
-        #print("before info loaded")
         self.ind_to_classes, self.ind_to_predicates, self.ind_to_attributes = load_info(dict_file) # contiguous 151, 51 containing __background__
-        #print("info loaded")
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
         self.mydict = {self.ind_to_classes[i]:i for i in range(len(self.ind_to_classes))}
-        df = pd.read_csv("/home/suji/spring20/Scene-Graph-Benchmark.pytorch/vcr_train_fns.csv")
         
+        df = pd.read_csv('/home/suji/spring20/Scene-Graph-Benchmark.pytorch/vcr_train_fns.csv')
         self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['fn'])]
-        #self.filenames = []
-        #df = pd.read_csv('/home/suji/spring20/filenames.csv')
-        #self.filenames =[os.path.join("/home/suji/spring20/vilbert_beta/data/VCR/vcr1images",fn) for fn in list(df['img_fn'])]
-        #print(self.filenames)
-        # print("self.filenames",self.filenames)
-        # self.imgs = []#[Image.open(fn).convert("RGB") for fn in self.filenames]
+        self.imgids =list(df['img_id'])
         self.img_info = []
         for tup in list(df['width_height']) :
             w, h = ast.literal_eval(tup)
             self.img_info.append({"width": w, "height":h})
-
+        assert len(self.filenames) == len(self.img_info)
 
     def get_groundtruth(self, index, evaluation=True, flip_img=False):
-        #print(fn)
         fn = self.filenames[index]
         with open(fn.replace("jpg", "json")) as f:
             data = json.load(f)
         w, h=data['width'], data['height']
         assert len(data['boxes']) != 0
         bb_list = np.array([x[:-1] for x in data['boxes']])
-        #print("bb_list", bb_list)
         obj_list = []
         for name in data['names']:
-            obj_list.append(self.mydict['fork'])
+            obj_list.append(self.mydict['fork']) # groundtruth doesn't matter for extracting proposals
             #if name in m.keys():
             #    obj_list.append(self.mydict[m[name]])
             #else:
@@ -72,9 +62,7 @@ class VCRDataset(torch.utils.data.Dataset):
         # important: recover original box from BOX_SCALE
         box =bb_list / BOX_SCALE * max(w, h)
         assert len(box) != 0
-        #print("box", len(box))
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
-        #print(fn, " box", box, box.size())
         '''
         if flip_img:
             new_xmin = w - box[:,2]
@@ -83,11 +71,8 @@ class VCRDataset(torch.utils.data.Dataset):
             box[:,2] = new_xmax
         '''
         target = BoxList(box, (w, h), 'xyxy') # xyxy
-        #print("target after box", target)
         assert len(target) != 0
         target.add_field("labels", torch.from_numpy(obj_list))
-        #print("len(obj_list),",len(obj_list))
-        #print(np.zeros(len(obj_list),10))
         target.add_field("attributes", torch.from_numpy(np.zeros((len(obj_list),10))))
 
         # relation = self.relationships[index].copy() # (num_rel, 3)
@@ -117,7 +102,6 @@ class VCRDataset(torch.utils.data.Dataset):
         '''
         if evaluation:
             target = target.clip_to_image(remove_empty=False)
-            print("two target", target)
             # target.add_field("relation_tuple", torch.LongTensor(relation)) # for evaluation
             return target
         else:
@@ -138,8 +122,7 @@ class VCRDataset(torch.utils.data.Dataset):
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
-        print(os.path.basename(fn), " target after", target)
-        return img, target, index
+        return img, target, index, fn, self.img_info[index]
 
     def get_img_info(self, index):
         # WARNING: original image_file.json has several pictures with false image size
@@ -150,6 +133,7 @@ class VCRDataset(torch.utils.data.Dataset):
         return self.img_info[index]
 
     def __len__(self):
+        print(len(self.filenames))
         return len(self.filenames)
 
 
@@ -199,6 +183,7 @@ class VGDataset(torch.utils.data.Dataset):
         self.flip_aug = flip_aug
         self.split = split
         self.img_dir = img_dir
+        print("img_dir", img_dir)
         self.dict_file = dict_file
         self.roidb_file = roidb_file
         self.image_file = image_file
@@ -210,16 +195,27 @@ class VGDataset(torch.utils.data.Dataset):
 
         self.categories = {i : self.ind_to_classes[i] for i in range(len(self.ind_to_classes))}
 
+        self.filenames, self.img_info = load_image_filenames(img_dir, image_file) # length equals to split_mask
         self.split_mask, self.gt_boxes, self.gt_classes, self.gt_attributes, self.relationships = load_graphs(
             self.roidb_file, self.split, num_im, num_val_im=num_val_im,
             filter_empty_rels=filter_empty_rels,
             filter_non_overlap=self.filter_non_overlap,
+            img_info=self.img_info
         )
-
-        self.filenames, self.img_info = load_image_filenames(img_dir, image_file) # length equals to split_mask
+        n = len(self.filenames)
+        left, right = 0, n  # used for splitting the dataset
+        self.filenames = self.filenames[left:right]
+        self.img_info = self.img_info[left:right]
+        self.gt_boxes = self.gt_boxes[left:right]
+        self.gt_classes =  self.gt_classes[left:right]
+        self.gt_attributes = self.gt_attributes[left:right]
+        self.relationships = self.relationships[left:right]
+        assert len(self.filenames) == len(self.img_info) == len(self.gt_boxes) == len(self.gt_classes) == len(self.relationships)
+        print('len(self.filenames)', len(self.filenames))
+        '''
         self.filenames = [self.filenames[i] for i in np.where(self.split_mask)[0]]
         self.img_info = [self.img_info[i] for i in np.where(self.split_mask)[0]]
-
+       '''
 
     def __getitem__(self, index):
         #if self.split == 'train':
@@ -240,7 +236,7 @@ class VGDataset(torch.utils.data.Dataset):
         if self.transforms is not None:
             img, target = self.transforms(img, target)
 
-        return img, target, index
+        return img, target, index, self.img_info[index], self.filenames[index]
 
 
     def get_statistics(self):
@@ -271,10 +267,11 @@ class VGDataset(torch.utils.data.Dataset):
 
     def get_groundtruth(self, index, evaluation=False, flip_img=False):
         img_info = self.get_img_info(index)
-        w, h = img_info['width'], img_info['height']
+        '''w, h = img_info['width'], img_info['height']
         bb_list =data['boxes']
         obj_list = data['names']
-
+        '''
+        w, h = img_info['width'], img_info['height']
         # important: recover original box from BOX_SCALE
         box = self.gt_boxes[index] / BOX_SCALE * max(w, h)
         box = torch.from_numpy(box).reshape(-1, 4)  # guard against no boxes
@@ -374,8 +371,6 @@ def bbox_overlaps(boxes1, boxes2, to_move=1):
     boxes1 : numpy, [num_obj, 4] (x1,y1,x2,y2)
     boxes2 : numpy, [num_obj, 4] (x1,y1,x2,y2)
     """
-    #print('boxes1: ', boxes1.shape)
-    #print('boxes2: ', boxes2.shape)
     num_box1 = boxes1.shape[0]
     num_box2 = boxes2.shape[0]
     lt = np.maximum(boxes1.reshape([num_box1, 1, -1])[:,:,:2], boxes2.reshape([1, num_box2, -1])[:,:,:2]) # [N,M,2]
@@ -434,25 +429,26 @@ def load_image_filenames(img_dir, image_file):
     with open(image_file, 'r') as f:
         im_data = json.load(f)
 
-    #print("img_dir:{}, image_file:{}".format(img_dir, image_file))
     corrupted_ims = ['1592.jpg', '1722.jpg', '4616.jpg', '4617.jpg']
     fns = []
     img_info = []
+   
     for i, img in enumerate(im_data):
         basename = '{}.jpg'.format(img['image_id'])
         if basename in corrupted_ims:
             continue
-
         filename = os.path.join(img_dir, basename)
         if os.path.exists(filename):
             fns.append(filename)
             img_info.append(img)
+    print('len(fns)', len(fns))
+    print('len(img_info)',len(img_info))
     assert len(fns) == 108073
     assert len(img_info) == 108073
     return fns, img_info
 
 
-def load_graphs(roidb_file, split, num_im, num_val_im, filter_empty_rels, filter_non_overlap):
+def load_graphs(roidb_file, split, num_im, num_val_im, filter_empty_rels, filter_non_overlap, img_info):
     """
     Load the file containing the GT boxes and relations, as well as the dataset split
     Parameters:
@@ -480,16 +476,16 @@ def load_graphs(roidb_file, split, num_im, num_val_im, filter_empty_rels, filter
     if filter_empty_rels:
         split_mask &= roi_h5['img_to_first_rel'][:] >= 0
 
-    image_index = np.where(split_mask)[0]
+    #image_index = np.where(split_mask)[0]
+    image_index = np.arange(108073)#[img_info['image_id' ] for img_info in img_info]#np.arange(108073)
+    '''
     if num_im > -1:
         image_index = image_index[:num_im]
     if num_val_im > 0:
         if split == 'val':
             image_index = image_index[:num_val_im]
         elif split == 'train':
-            image_index = image_index[num_val_im:]
-
-
+            image_index = image_index[num_val_im:]'''
     split_mask = np.zeros_like(data_split).astype(bool)
     split_mask[image_index] = True
 
@@ -537,7 +533,7 @@ def load_graphs(roidb_file, split, num_im, num_val_im, filter_empty_rels, filter
             assert np.all(obj_idx < boxes_i.shape[0])
             rels = np.column_stack((obj_idx, predicates)) # (num_rel, 3), representing sub, obj, and pred
         else:
-            assert not filter_empty_rels
+            #assert not filter_empty_rels
             rels = np.zeros((0, 3), dtype=np.int32)
 
         if filter_non_overlap:
@@ -559,5 +555,4 @@ def load_graphs(roidb_file, split, num_im, num_val_im, filter_empty_rels, filter
         gt_classes.append(gt_classes_i)
         gt_attributes.append(gt_attributes_i)
         relationships.append(rels)
-
     return split_mask, boxes, gt_classes, gt_attributes, relationships

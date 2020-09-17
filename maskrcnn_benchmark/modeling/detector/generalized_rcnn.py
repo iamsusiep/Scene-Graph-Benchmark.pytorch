@@ -43,7 +43,7 @@ class GeneralizedRCNN(nn.Module):
                 like `scores`, `labels` and `mask` (for Mask R-CNN models).
 
         """
-        print("GeneralizedRCNN model forward")
+        #print("GeneralizedRCNN model forward")
         if self.training and targets is None:
             print("shouldn't be here")
             raise ValueError("In training mode, targets should be passed")
@@ -51,8 +51,8 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensors)
         proposals, proposal_losses = self.rpn(images, features, targets)
         if self.roi_heads:
-            print("roi_head")
-            x, result, detector_losses, orig_features = self.roi_heads(features, proposals, targets, logger)
+            #print("roi_head")
+            x, result, detector_losses, orig_features,proposals = self.roi_heads(features, proposals, targets, logger)
         else:
             # RPN-only models don't have roi_heads
             x = features
@@ -67,5 +67,5 @@ class GeneralizedRCNN(nn.Module):
                 losses.update(proposal_losses)
             return losses
         if objdet:
-            return result, proposals, x,orig_features 
+            return result, proposals, x, orig_features
         return result

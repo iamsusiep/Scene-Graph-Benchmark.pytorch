@@ -70,9 +70,9 @@ class ROIBoxHead(torch.nn.Module):
                 proposals = add_predict_logits(proposals, class_logits)
                 # post process:
                 # filter proposals using nms, keep original bbox, add a field 'boxes_per_cls' of size (#nms, #cls, 4)
-                x, result = self.post_processor((x, class_logits, box_regression), proposals, relation_mode=True)
+                x, result, orig_features = self.post_processor((x, class_logits, box_regression), proposals, relation_mode=True)# nms_features, results, features: per proposal
                 # note x is not matched with processed_proposals, so sharing x is not permitted
-                return x, result, {}
+                return x, result, {}, orig_features
         self.training = False
         #####################################################################
         # Original box head (relation_on = False)

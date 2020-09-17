@@ -314,22 +314,20 @@ def make_vcr_data_loader(cfg, is_distributed=False, start_iter=0, is_train =Fals
     is_train = False
     transforms = None if not is_train and cfg.TEST.BBOX_AUG.ENABLED else build_transforms(cfg, is_train)
     datasets = build_vcr_dataset(cfg, dataset_list, transforms, DatasetCatalog)
-    #print("make_vcr_data_loader", datasets)
     data_loaders = []
     for dataset in datasets:
-        sampler = make_data_sampler(dataset, shuffle, is_distributed)
-        batch_sampler = make_batch_data_sampler(
-            dataset, sampler, aspect_grouping, images_per_gpu, num_iters, start_iter
-        )
+        #sampler = make_data_sampler(dataset, shuffle, is_distributed)
+        #batch_sampler = make_batch_data_sampler(
+        #    dataset, sampler, aspect_grouping, images_per_gpu, num_iters, start_iter
+        #)
         collator = BBoxAugCollator() if not is_train and cfg.TEST.BBOX_AUG.ENABLED else \
             BatchCollator(cfg.DATALOADER.SIZE_DIVISIBILITY)
         num_workers = cfg.DATALOADER.NUM_WORKERS
         data_loader = torch.utils.data.DataLoader(
             dataset,
             num_workers=num_workers,
-            batch_sampler=batch_sampler,
+            #batch_sampler=batch_sampler,
             collate_fn=collator,
         )
         data_loaders.append(data_loader)
-    #print("dataloaders", data_loaders)
     return data_loaders
